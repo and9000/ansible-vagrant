@@ -1,0 +1,7 @@
+---
+# defaults file for common
+
+ansible_ssh_user: 'ubuntu'
+package_list:
+  - apache2
+  - php-fpm

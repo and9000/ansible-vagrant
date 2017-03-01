@@ -1,0 +1,50 @@
+---
+- name: Check for supported operating system on target
+  fail:
+    msg: "The operating system of the target machine ({{ inventory_hostname }}) is not currently supported."
+  when: ( ansible_distribution == "Ubuntu" and ansible_distribution_major_version not in ['14', '16'] )
+
+
+- name: include os specific variables
+  include_vars: "{{ ansible_os_family }}.yml"
+
+
+- name: Include Debian specific tasks
+  include: Debian.yml
+  when: ansible_os_family == 'Debian'
+
+
+#- name: Include RedHat specific tasks
+#  include: RedHat.yml
+#  when: ansible_os_family == 'RedHat'
+#
+#- name: Include Suse specific tasks
+#  include: Suse.yml
+#  when: ansible_os_family == 'Suse'
+
+
+- name: Ensure Service is Started and Enabled
+  service: >
+   name={{ mysql_service_name }}
+   state=started
+   enabled=yes
+
+- name: Debian | install python-mysqldb
+  apt:
+   name=python-mysqldb
+   state=latest
+   update_cache=yes
+
+- name: Set root user password
+  # If .my.cnf already exists, this will cause an mysql-root-password update.
+  mysql_user:
+    name: root
+    host: localhost
+    password: "{{ mysql_root_password }}"
+    check_implicit_admin: true
+
+- name: Copy .my.cnf
+  template: src=.my.cnf.j2 dest=/home/ubuntu/.my.cnf
+
+- name: restart mysql
+  service: name=mysql state=restarted

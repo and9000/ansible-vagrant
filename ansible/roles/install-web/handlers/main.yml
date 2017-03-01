@@ -1,0 +1,5 @@
+---
+# handlers file for common
+
+- name: Restart Apache2
+  service: name=apache2 state=restarted

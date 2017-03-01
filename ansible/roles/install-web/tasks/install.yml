@@ -1,0 +1,13 @@
+---
+
+- name: Install Apache2
+  apt: name="{{ item }}" state=present
+  with_items:
+    - "{{ package_list }}"
+
+- name: Start Apache2
+  service: name=apache2 state=started enabled=yes
+
+- name: Copy index.html
+  template: src=index.html.j2 dest={{ www_path }}/index.html owner=www-data group=www-data mode=0644
+  notify: Restart Apache2

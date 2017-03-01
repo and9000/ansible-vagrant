@@ -1,0 +1,53 @@
+---
+- name: Debian | install mysql server
+  apt:
+   pkg={{ item }}
+   update_cache=yes
+   state=present
+  with_items:
+   - "{{ mysql.pkg }}"
+
+
+- name: Debian | install python-mysqldb
+  apt:
+   name=python-mysqldb
+   state=latest
+   update_cache=yes
+  when: mysql_replication is defined
+
+
+- name: Debian | copy the main configuration file my.cnf
+  template:
+   src={{ mysql_my_cnf }}
+   dest=/etc/mysql/my.cnf
+   owner=root
+   group=root
+   mode=0644
+  when: mysql_my_cnf is defined
+  notify: restart mysql
+
+
+- name: Debian | copy configuration files to conf.d
+  template:
+   src={{ item }}
+   dest=/etc/mysql/conf.d/{{ item | basename }}
+   owner=root
+   group=root
+   mode=0644
+  with_fileglob: "{{ mysql_conf_d | default([]) }}/*"
+  notify: restart mysql
+
+
+#- name: Debian | Replication | Restart MySQL if Replication Config Updated
+#  service: name={{ mysql_platform.service_name }} state=restarted
+#  when: replicationCfg|changed
+
+
+- name: Debian | Replication | Create Replication User on Master
+  mysql_user:
+    name: "{{ mysql_replication.user }}"
+    password: "{{ mysql_replication.user_password }}"
+    priv: "*.*:REPLICATION SLAVE"
+    host: "%"
+    state: present
+  when: mysql_eplication is defined and mysql_replication.role == 'master'
